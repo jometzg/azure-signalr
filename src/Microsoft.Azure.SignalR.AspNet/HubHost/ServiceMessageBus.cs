@@ -8,6 +8,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IServiceConnectionManager _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IAckHandler _ackHandler;
+        private readonly ILogger _logger;
 
         public ServiceMessageBus(IDependencyResolver resolver) : base(resolver)
         {
@@ -25,6 +27,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _clientConnectionManager = resolver.Resolve<IClientConnectionManager>() ?? throw new ArgumentNullException(nameof(IClientConnectionManager));
             _parser = resolver.Resolve<IMessageParser>() ?? throw new ArgumentNullException(nameof(IMessageParser));
             _ackHandler = resolver.Resolve<IAckHandler>() ?? throw new ArgumentNullException(nameof(IAckHandler));
+            _logger = (resolver.Resolve<ILoggerFactory>() ?? throw new ArgumentNullException(nameof(ILoggerFactory))).CreateLogger<ServiceMessageBus>();
         }
 
         public override Task Publish(Message message)
@@ -56,6 +59,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private async Task WriteMessage(IServiceConnectionContainer connection, AppMessage appMessage)
         {
             var message = appMessage.Message;
+            _logger.LogInformation($"Start writing message, hash: {message.GetHashCode()}, size: {appMessage.RawMessage.Value.Count}");
             switch (message)
             {
                 // For group related messages, make sure messages are written to the same partition

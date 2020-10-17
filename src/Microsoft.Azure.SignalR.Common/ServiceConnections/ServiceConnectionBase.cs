@@ -153,7 +153,11 @@ namespace Microsoft.Azure.SignalR
                         // TODO: Never cleanup connections unless Service asks us to do that
                         // Current implementation is based on assumption that Service will drop clients
                         // if server connection fails.
+                        Logger.LogInformation($"{ConnectionId} start CleanupClientConnections");
+
                         await CleanupClientConnections();
+
+                        Logger.LogInformation($"{ConnectionId} end CleanupClientConnections");
                     }
                 }
                 catch (Exception ex)
@@ -167,15 +171,18 @@ namespace Microsoft.Azure.SignalR
                     // Don't allow write anymore when the connection is disconnected
                     Status = ServiceConnectionStatus.Disconnected;
 
+                    Logger.LogInformation($"{ConnectionId} dispose waiting");
                     await _writeLock.WaitAsync();
                     try
                     {
                         // close the underlying connection
+                        Logger.LogInformation($"{ConnectionId} start disposing");
                         await DisposeConnection(connection);
                     }
                     finally
                     {
                         _writeLock.Release();
+                        Logger.LogInformation($"{ConnectionId} disposed");
                     }
                 }
             }
@@ -214,16 +221,19 @@ namespace Microsoft.Azure.SignalR
                 return false;
             }
 
+            Logger.LogInformation($"{ConnectionId} writer waiting, type: {serviceMessage.GetType()}, hash: {serviceMessage.GetHashCode()}");
             await _writeLock.WaitAsync();
 
             if (Status != ServiceConnectionStatus.Connected)
             {
                 // Make sure not write messages to the connection when it is no longer connected
                 _writeLock.Release();
+                Logger.LogInformation($"{ConnectionId} released writing: {Status}");
                 return false;
             }
             try
             {
+                Logger.LogInformation($"{ConnectionId} starts writing to transport, type: {serviceMessage.GetType()}, hash: {serviceMessage.GetHashCode()}");
                 // Write the service protocol message
                 ServiceProtocol.WriteMessage(serviceMessage, _connectionContext.Transport.Output);
                 await _connectionContext.Transport.Output.FlushAsync();
@@ -239,6 +249,7 @@ namespace Microsoft.Azure.SignalR
             finally
             {
                 _writeLock.Release();
+                Logger.LogInformation($"{ConnectionId} released writing, type: {serviceMessage.GetType()}, hash: {serviceMessage.GetHashCode()}");
             }
         }
 
