@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _clientConnectionManager = resolver.Resolve<IClientConnectionManager>() ?? throw new ArgumentNullException(nameof(IClientConnectionManager));
             _parser = resolver.Resolve<IMessageParser>() ?? throw new ArgumentNullException(nameof(IMessageParser));
             _ackHandler = resolver.Resolve<IAckHandler>() ?? throw new ArgumentNullException(nameof(IAckHandler));
-            _logger = (resolver.Resolve<ILoggerFactory>() ?? throw new ArgumentNullException(nameof(ILoggerFactory))).CreateLogger<ServiceMessageBus>();
+            _logger = resolver.Resolve<ILoggerFactory>()?.CreateLogger<ServiceMessageBus>() ?? NullLogger<ServiceMessageBus>.Instance;
         }
 
         public override Task Publish(Message message)
