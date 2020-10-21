@@ -222,7 +222,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             Logger.LogInformation($"{ConnectionId} writer waiting, type: {serviceMessage.GetType()}, hash: {serviceMessage.GetHashCode()}");
-            await _writeLock.WaitAsync();
+            await _writeLock.WaitAsync().ConfigureAwait(false);
 
             if (Status != ServiceConnectionStatus.Connected)
             {
